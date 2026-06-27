@@ -89,6 +89,8 @@ function App() {
         selfGrades: {},
         wrongQuestions: [],
         wrongAttempts: {},
+        activeStartQuestion: 0,
+        activeEndQuestion: 0,
         elapsedTime: 0,
         addedAt: Date.now(),
         lastActiveAt: Date.now()

@@ -9,6 +9,8 @@ export interface QuizFileRecord {
   wrongQuestions: number[]; // Sorted list of active wrong question IDs
   wrongAttempts: Record<number, number>; // Question -> cumulative count of wrong attempts (retained)
   elapsedTime: number;     // Cumulative practice time in seconds
+  activeStartQuestion?: number; // Start of current active test (unsubmitted)
+  activeEndQuestion?: number;   // End of current active test (unsubmitted)
   addedAt: number;
   lastActiveAt: number;
 }

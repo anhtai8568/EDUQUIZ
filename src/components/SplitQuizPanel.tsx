@@ -69,8 +69,11 @@ export const SplitQuizPanel: React.FC<SplitQuizPanelProps> = ({ recordId, onExit
         setSelfGrades(rec.selfGrades || {});
         setElapsedTime(rec.elapsedTime || 0);
 
-        // Suggest next question range based on last practiced questions
-        if (rec.endQuestion && rec.endQuestion > 0) {
+        // Load active range if it was in progress, otherwise suggest next range
+        if (rec.activeStartQuestion && rec.activeEndQuestion) {
+          setStartQuestion(rec.activeStartQuestion);
+          setEndQuestion(rec.activeEndQuestion);
+        } else if (rec.endQuestion && rec.endQuestion > 0) {
           const nextStart = rec.endQuestion + 1;
           setStartQuestion(nextStart);
           setEndQuestion(nextStart + 39);
@@ -162,10 +165,10 @@ export const SplitQuizPanel: React.FC<SplitQuizPanelProps> = ({ recordId, onExit
     setUserAnswers(updatedAnswers);
     setSelfGrades(updatedGrades);
 
-    // Update active ranges in database
+    // Update active ranges in database (keep endQuestion as last submitted progress)
     await updateQuizFileProgress(recordId, {
-      startQuestion,
-      endQuestion,
+      activeStartQuestion: startQuestion,
+      activeEndQuestion: endQuestion,
       userAnswers: updatedAnswers,
       selfGrades: updatedGrades,
       lastActiveAt: Date.now()
@@ -174,8 +177,8 @@ export const SplitQuizPanel: React.FC<SplitQuizPanelProps> = ({ recordId, onExit
     if (record) {
       setRecord({
         ...record,
-        startQuestion,
-        endQuestion,
+        activeStartQuestion: startQuestion,
+        activeEndQuestion: endQuestion,
         userAnswers: updatedAnswers,
         selfGrades: updatedGrades,
         lastActiveAt: Date.now()
@@ -273,8 +276,16 @@ export const SplitQuizPanel: React.FC<SplitQuizPanelProps> = ({ recordId, onExit
     setSelfGrades(updatedGrades);
     setStep('result');
 
+    // Calculate new completed range only if we were doing a standard range practice
+    const newEnd = practiceMode === 'range' ? Math.max(record?.endQuestion || 0, endQuestion) : (record?.endQuestion || 0);
+    const newStart = practiceMode === 'range' ? Math.min(record?.startQuestion || 1, startQuestion) : (record?.startQuestion || 1);
+
     // Save progress to IndexedDB
     await updateQuizFileProgress(recordId, {
+      startQuestion: newStart,
+      endQuestion: newEnd,
+      activeStartQuestion: 0,
+      activeEndQuestion: 0,
       selfGrades: updatedGrades,
       wrongQuestions: wrongList,
       wrongAttempts: updatedAttempts,
@@ -285,6 +296,10 @@ export const SplitQuizPanel: React.FC<SplitQuizPanelProps> = ({ recordId, onExit
     if (record) {
       setRecord({
         ...record,
+        startQuestion: newStart,
+        endQuestion: newEnd,
+        activeStartQuestion: 0,
+        activeEndQuestion: 0,
         selfGrades: updatedGrades,
         wrongQuestions: wrongList,
         wrongAttempts: updatedAttempts,
