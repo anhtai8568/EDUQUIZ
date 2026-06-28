@@ -225,6 +225,51 @@ export const SplitQuizPanel: React.FC<SplitQuizPanelProps> = ({ recordId, onExit
     }
   };
 
+  // Start practicing all historical wrong questions (even corrected ones)
+  const handleStartAllHistoryWrongPractice = async () => {
+    const historyList = record?.wrongAttempts ? Object.keys(record.wrongAttempts).map(Number).sort((a, b) => a - b) : [];
+    if (historyList.length === 0) return;
+
+    setPracticeMode('wrong_only');
+    setActiveQuestionNumbers(historyList);
+    setStep('quiz');
+    setResultFilter('all');
+    setElapsedTime(0);
+    setShowHistoryModal(false);
+
+    // Clear user answers and grades for all historical wrong questions, and place them back in wrongQuestions active list
+    const updatedAnswers = { ...userAnswers };
+    const updatedGrades = { ...selfGrades };
+    const newWrongs = new Set<number>(record?.wrongQuestions || []);
+
+    historyList.forEach((qNum) => {
+      delete updatedAnswers[qNum];
+      delete updatedGrades[qNum];
+      newWrongs.add(qNum);
+    });
+
+    const wrongList = Array.from(newWrongs).sort((a, b) => a - b);
+    setUserAnswers(updatedAnswers);
+    setSelfGrades(updatedGrades);
+
+    await updateQuizFileProgress(recordId, {
+      userAnswers: updatedAnswers,
+      selfGrades: updatedGrades,
+      wrongQuestions: wrongList,
+      lastActiveAt: Date.now()
+    });
+
+    if (record) {
+      setRecord({
+        ...record,
+        userAnswers: updatedAnswers,
+        selfGrades: updatedGrades,
+        wrongQuestions: wrongList,
+        lastActiveAt: Date.now()
+      });
+    }
+  };
+
   // Select an option: auto-save immediately to database
   const handleSelectOption = async (qNum: number, option: string) => {
     const updatedAnswers = { ...userAnswers, [qNum]: option };
@@ -1228,14 +1273,25 @@ export const SplitQuizPanel: React.FC<SplitQuizPanelProps> = ({ recordId, onExit
                 Xóa tất cả lịch sử đề
               </button>
               
-              <button 
-                onClick={handleStartWrongOnlyPractice} 
-                className="btn btn-primary"
-                style={{ backgroundColor: 'var(--danger)', borderColor: 'var(--danger-border)' }}
-                disabled={activeWrongCount === 0}
-              >
-                Luyện tập các câu sai này ({activeWrongCount})
-              </button>
+              {historyModalTab === 'active' ? (
+                <button 
+                  onClick={handleStartWrongOnlyPractice} 
+                  className="btn btn-primary"
+                  style={{ backgroundColor: 'var(--danger)', borderColor: 'var(--danger-border)' }}
+                  disabled={activeWrongCount === 0}
+                >
+                  Luyện tập câu chưa sửa ({activeWrongCount})
+                </button>
+              ) : (
+                <button 
+                  onClick={handleStartAllHistoryWrongPractice} 
+                  className="btn btn-primary"
+                  style={{ backgroundColor: 'var(--danger)', borderColor: 'var(--danger-border)' }}
+                  disabled={historyWrongCount === 0}
+                >
+                  Luyện lại tất cả câu từng sai ({historyWrongCount})
+                </button>
+              )}
 
               <button 
                 onClick={() => setShowHistoryModal(false)} 
