@@ -11,7 +11,8 @@ import {
   Check,
   ChevronRight,
   RotateCcw,
-  Home
+  Home,
+  Sparkles
 } from 'lucide-react';
 import { getQuizFile, updateQuizFileProgress, saveQuizFile } from '../utils/db';
 import type { QuizFileRecord } from '../utils/db';
@@ -493,6 +494,33 @@ export const InteractiveQuizPanel: React.FC<InteractiveQuizPanelProps> = ({
     });
   };
 
+  // Resume active quiz session
+  const handleResumeQuiz = () => {
+    if (!record) return;
+    const activeStart = record.activeStartQuestion || 0;
+    const activeEnd = record.activeEndQuestion || 0;
+    if (activeStart === 0 || activeEnd === 0) return;
+
+    setPracticeMode('range');
+    setStartQuestion(activeStart);
+    setEndQuestion(activeEnd);
+
+    const rangeNums = Array.from(
+      { length: activeEnd - activeStart + 1 },
+      (_, i) => activeStart + i
+    );
+    setActiveQuestionNumbers(rangeNums);
+
+    // Find first unanswered question index in active range
+    const firstUnanswered = rangeNums.findIndex(qNum => !userAnswers[qNum]);
+    const resumeIdx = firstUnanswered !== -1 ? firstUnanswered : 0;
+
+    setCurrentIdx(resumeIdx);
+    setSelectedOption(null);
+    setHasAnsweredCurrent(false);
+    setStep('quiz');
+  };
+
   // Clear entire history
   const handleClearHistory = async () => {
     if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử câu sai và tiến độ của file này không?')) {
@@ -633,6 +661,32 @@ export const InteractiveQuizPanel: React.FC<InteractiveQuizPanelProps> = ({
               </button>
             </div>
           </div>
+
+          {record && record.activeStartQuestion !== undefined && record.activeEndQuestion !== undefined && record.activeStartQuestion > 0 && record.activeEndQuestion > 0 && (
+            <div className="glass-panel animate-scale-in" style={{
+              padding: '20px',
+              backgroundColor: 'rgba(99, 102, 241, 0.1)',
+              border: '1px dashed var(--primary-color)',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Sparkles size={16} /> Lượt làm bài chưa nộp
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                Bạn có lượt làm bài dở từ câu <strong>{record.activeStartQuestion}</strong> đến câu <strong>{record.activeEndQuestion}</strong> chưa nộp.
+              </p>
+              <button 
+                onClick={handleResumeQuiz}
+                className="btn btn-primary"
+                style={{ padding: '10px 14px', fontSize: '13px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                Tiếp tục làm bài dở <ChevronRight size={14} />
+              </button>
+            </div>
+          )}
 
           {/* Range input */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>

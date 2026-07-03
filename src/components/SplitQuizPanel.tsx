@@ -10,7 +10,9 @@ import {
   ArrowLeft, 
   BookOpen, 
   Trash2,
-  Check
+  Check,
+  Sparkles,
+  ChevronRight
 } from 'lucide-react';
 import { parseManualAnswers } from '../utils/pdfParser';
 import { getQuizFile, updateQuizFileProgress, saveQuizFile } from '../utils/db';
@@ -184,6 +186,26 @@ export const SplitQuizPanel: React.FC<SplitQuizPanelProps> = ({ recordId, onExit
         lastActiveAt: Date.now()
       });
     }
+  };
+
+  // Resume active quiz session
+  const handleResumeQuiz = () => {
+    if (!record) return;
+    const activeStart = record.activeStartQuestion || 0;
+    const activeEnd = record.activeEndQuestion || 0;
+    if (activeStart === 0 || activeEnd === 0) return;
+
+    setPracticeMode('range');
+    setStartQuestion(activeStart);
+    setEndQuestion(activeEnd);
+
+    const rangeNums = Array.from(
+      { length: activeEnd - activeStart + 1 },
+      (_, i) => activeStart + i
+    );
+    setActiveQuestionNumbers(rangeNums);
+    setStep('quiz');
+    setResultFilter('all');
   };
 
   // Start wrong questions practice loop
@@ -641,6 +663,32 @@ export const SplitQuizPanel: React.FC<SplitQuizPanelProps> = ({ recordId, onExit
                 </button>
               </div>
             </div>
+
+            {record && record.activeStartQuestion !== undefined && record.activeEndQuestion !== undefined && record.activeStartQuestion > 0 && record.activeEndQuestion > 0 && (
+              <div className="glass-panel animate-scale-in" style={{
+                padding: '16px',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                border: '1px dashed var(--primary-color)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px'
+              }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={16} /> Lượt làm bài chưa nộp
+                </div>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+                  Bạn có lượt làm bài dở từ câu <strong>{record.activeStartQuestion}</strong> đến câu <strong>{record.activeEndQuestion}</strong> chưa nộp.
+                </p>
+                <button 
+                  onClick={handleResumeQuiz}
+                  className="btn btn-primary"
+                  style={{ padding: '8px 12px', fontSize: '12px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                >
+                  Tiếp tục làm bài dở <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
 
             {/* Question Range Selection */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
