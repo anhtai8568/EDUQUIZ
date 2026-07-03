@@ -211,6 +211,8 @@ export function parseQuizText(rawText: string): ParseResult {
     // Sort by index just in case
     validOptionMatches.sort((a, b) => a.index - b.index);
 
+    let inlineAnswer = '';
+
     if (validOptionMatches.length > 0) {
       // Question text is everything before the first option
       questionText = blockText.substring(0, validOptionMatches[0].index).trim();
@@ -219,9 +221,21 @@ export function parseQuizText(rawText: string): ParseResult {
       for (let j = 0; j < validOptionMatches.length; j++) {
         const oStart = validOptionMatches[j].index + validOptionMatches[j].length;
         const oEnd = j < validOptionMatches.length - 1 ? validOptionMatches[j + 1].index : blockText.length;
+        let optText = blockText.substring(oStart, oEnd).trim().replace(/^[:.\-\s]+/, '');
+
+        // Search for inline answer patterns in the option text
+        // E.g. "Đáp án: A", "Đáp án A", "Chọn A", "ĐA: A", "Key: A"
+        const inlineAnsRegex = /(?:Đáp\s*án\s*[:\-]?\s*|Chọn\s*|ĐA\s*[:\-]?\s*|Key\s*[:\-]?\s*)\b([A-D])\b/i;
+        const inlineMatch = inlineAnsRegex.exec(optText);
+        if (inlineMatch) {
+          inlineAnswer = inlineMatch[1].toUpperCase();
+          optText = optText.replace(inlineAnsRegex, '').trim();
+          optText = optText.replace(/[,.\-\s]+$/, '').trim();
+        }
+
         options.push({
           key: validOptionMatches[j].key,
-          text: blockText.substring(oStart, oEnd).trim().replace(/^[:.\-\s]+/, '') // Clean up separators
+          text: optText
         });
       }
     }
@@ -229,8 +243,8 @@ export function parseQuizText(rawText: string): ParseResult {
     // Clean question text (remove any trailing garbage)
     questionText = questionText.replace(/^[:.\-\s]+/, '');
 
-    // Get correct answer from answer map
-    const correctAnswer = answersMap.get(current.qNum) || '';
+    // Get correct answer from answer map, fallback to inline answer found
+    const correctAnswer = answersMap.get(current.qNum) || inlineAnswer || '';
 
     // Push the parsed question
     questions.push({
