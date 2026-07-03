@@ -1,7 +1,9 @@
+import type { Question } from './pdfParser';
+
 export interface QuizFileRecord {
-  id: string;              // File name (e.g. "kiemthu1.pdf")
+  id: string;              // File name or unique id
   name: string;            // Display name
-  fileBlob: Blob;          // The PDF file blob itself
+  fileBlob: Blob;          // The PDF file blob or text file blob
   startQuestion: number;   // Question range start
   endQuestion: number;     // Question range end
   userAnswers: Record<number, string>; // Selected answers (accumulated)
@@ -13,6 +15,8 @@ export interface QuizFileRecord {
   activeEndQuestion?: number;   // End of current active test (unsubmitted)
   addedAt: number;
   lastActiveAt: number;
+  isTextQuiz?: boolean;        // Whether this is a text-pasted quiz
+  parsedQuestions?: Question[]; // Array of parsed questions
 }
 
 const DB_NAME = 'EduQuizDatabase';

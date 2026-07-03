@@ -6,11 +6,13 @@ import { QuizPanel } from './components/QuizPanel';
 import { QuizResult } from './components/QuizResult';
 import { SplitQuizPanel } from './components/SplitQuizPanel';
 import { Dashboard } from './components/Dashboard';
+import { TextInputQuizForm } from './components/TextInputQuizForm';
+import { InteractiveQuizPanel } from './components/InteractiveQuizPanel';
 import type { Question, ParseResult } from './utils/pdfParser';
 import { getAllQuizFiles, deleteQuizFile, saveQuizFile } from './utils/db';
 import type { QuizFileRecord } from './utils/db';
 
-type AppStep = 'dashboard' | 'upload' | 'preview' | 'quiz' | 'result' | 'split_quiz';
+type AppStep = 'dashboard' | 'upload' | 'preview' | 'quiz' | 'result' | 'split_quiz' | 'create_text_quiz';
 
 function App() {
   const [step, setStep] = useState<AppStep>('dashboard');
@@ -103,6 +105,33 @@ function App() {
     setStep('preview');
   };
 
+  // Text Quiz parsed and created successfully
+  const handleTextQuizCreate = async (result: ParseResult, title: string, rawText: string) => {
+    const id = 'text_' + Date.now();
+    const record: QuizFileRecord = {
+      id: id,
+      name: title,
+      fileBlob: new Blob([rawText], { type: 'text/plain' }),
+      startQuestion: 1,
+      endQuestion: 0,
+      userAnswers: {},
+      selfGrades: {},
+      wrongQuestions: [],
+      wrongAttempts: {},
+      activeStartQuestion: 0,
+      activeEndQuestion: 0,
+      elapsedTime: 0,
+      addedAt: Date.now(),
+      lastActiveAt: Date.now(),
+      isTextQuiz: true,
+      parsedQuestions: result.questions
+    };
+    await saveQuizFile(record);
+    setActiveRecordId(id);
+    await loadDBFiles();
+    setStep('split_quiz');
+  };
+
   const handleConfirmQuestions = (confirmedQuestions: Question[]) => {
     setQuestions(confirmedQuestions);
     setStep('quiz');
@@ -192,6 +221,14 @@ function App() {
             onSelectFile={handleSelectFile} 
             onDeleteFile={handleDeleteFile} 
             onAddNewFile={() => setStep('upload')} 
+            onAddNewTextQuiz={() => setStep('create_text_quiz')}
+          />
+        )}
+
+        {step === 'create_text_quiz' && (
+          <TextInputQuizForm 
+            onParseSuccess={handleTextQuizCreate}
+            onBack={() => setStep('dashboard')}
           />
         )}
 
@@ -231,10 +268,17 @@ function App() {
         )}
 
         {step === 'split_quiz' && activeRecordId && (
-          <SplitQuizPanel 
-            recordId={activeRecordId}
-            onExit={handleUploadNew}
-          />
+          dbFiles.find(f => f.id === activeRecordId)?.isTextQuiz ? (
+            <InteractiveQuizPanel 
+              recordId={activeRecordId}
+              onExit={handleUploadNew}
+            />
+          ) : (
+            <SplitQuizPanel 
+              recordId={activeRecordId}
+              onExit={handleUploadNew}
+            />
+          )
         )}
       </main>
 

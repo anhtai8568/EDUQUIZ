@@ -5,7 +5,8 @@ import {
   Trash2, 
   Plus, 
   Calendar,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import type { QuizFileRecord } from '../utils/db';
 
@@ -14,13 +15,15 @@ interface DashboardProps {
   onSelectFile: (record: QuizFileRecord) => void;
   onDeleteFile: (id: string) => void;
   onAddNewFile: () => void;
+  onAddNewTextQuiz: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   files,
   onSelectFile,
   onDeleteFile,
-  onAddNewFile
+  onAddNewFile,
+  onAddNewTextQuiz
 }) => {
   // Format elapsed time (seconds -> MM:SS or HH:MM:SS)
   const formatPracticeTime = (secs: number) => {
@@ -70,13 +73,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
         </div>
 
-        <button 
-          onClick={onAddNewFile}
-          className="btn btn-primary"
-          style={{ padding: '12px 24px', boxShadow: '0 8px 16px -4px rgba(99, 102, 241, 0.3)' }}
-        >
-          <Plus size={18} /> Thêm Đề PDF Mới
-        </button>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <button 
+            onClick={onAddNewFile}
+            className="btn btn-primary"
+            style={{ padding: '12px 24px', boxShadow: '0 8px 16px -4px rgba(99, 102, 241, 0.3)' }}
+          >
+            <Plus size={18} /> Thêm Đề PDF Mới
+          </button>
+          <button 
+            onClick={onAddNewTextQuiz}
+            className="btn btn-outline"
+            style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700' }}
+          >
+            <Sparkles size={18} style={{ color: 'rgb(168, 85, 247)' }} /> Tạo Đề Từ Văn Bản (Quizizz)
+          </button>
+        </div>
       </div>
 
       {/* Empty State */}
@@ -146,14 +158,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     width: '48px',
                     height: '48px',
                     borderRadius: 'var(--radius-md)',
-                    backgroundColor: 'var(--primary-light)',
-                    color: 'var(--primary-color)',
+                    backgroundColor: file.isTextQuiz ? 'rgba(168, 85, 247, 0.15)' : 'var(--primary-light)',
+                    color: file.isTextQuiz ? 'rgb(168, 85, 247)' : 'var(--primary-color)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0
                   }}>
-                    <FileText size={24} />
+                    {file.isTextQuiz ? <Sparkles size={24} /> : <FileText size={24} />}
                   </div>
                   <div style={{ overflow: 'hidden', flexGrow: 1 }}>
                     <h3 
@@ -164,11 +176,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         color: 'var(--text-primary)',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis'
+                        textOverflow: 'ellipsis',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
                       }}
                       title={file.name}
                     >
                       {file.name}
+                      {file.isTextQuiz && (
+                        <span className="badge" style={{ backgroundColor: 'rgba(168, 85, 247, 0.15)', color: 'rgb(168, 85, 247)', fontSize: '9px', padding: '2px 6px' }}>
+                          Quizizz
+                        </span>
+                      )}
                     </h3>
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                       <Calendar size={12} /> Thêm ngày: {formatDate(file.addedAt)}
